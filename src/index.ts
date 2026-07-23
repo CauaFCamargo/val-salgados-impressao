@@ -39,6 +39,10 @@ async function main(): Promise<void> {
   );
   if (config.dryRun) {
     console.log("(modo seguro: mostra o cupom no terminal, não imprime)\n");
+  } else {
+    // Mostra o caminho da impressora exatamente como o Node leu do .env —
+    // útil pra conferir se as barras invertidas do Windows vieram certas.
+    console.log(`Impressora: ${JSON.stringify(config.impressoraInterface)}\n`);
   }
 
   await checar(); // primeira checagem imediata
