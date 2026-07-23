@@ -52,7 +52,20 @@ export function montarLinhasCupom(pedido: Pedido, via: Via): string[] {
   linhas.push(`Fone: ${pedido.telefone}`);
 
   if (pedido.tipoEntrega === "ENTREGA") {
-    linhas.push(`Entrega: ${pedido.endereco ?? "-"}`);
+    // Endereço em várias linhas: rua+número, bairro+cidade, CEP e complemento.
+    // `filter(Boolean)` some com os pedaços vazios (ex.: pedido antigo sem CEP).
+    const ruaNumero = [pedido.endereco, pedido.numeroEndereco]
+      .filter(Boolean)
+      .join(", ");
+    const bairroCidade = [pedido.bairro, pedido.cidade]
+      .filter(Boolean)
+      .join(" - ");
+
+    linhas.push("ENTREGA:");
+    if (ruaNumero) linhas.push(ruaNumero);
+    if (bairroCidade) linhas.push(bairroCidade);
+    if (pedido.cep) linhas.push(`CEP: ${pedido.cep}`);
+    if (pedido.complemento) linhas.push(`Compl.: ${pedido.complemento}`);
   } else {
     linhas.push("** RETIRADA NA LOJA **");
   }

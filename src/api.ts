@@ -17,7 +17,10 @@ export interface Pedido {
   telefone: string;
   tipoEntrega: string;
   endereco: string | null;
+  numeroEndereco: string | null;
   bairro: string | null;
+  cidade: string | null;
+  cep: string | null;
   complemento: string | null;
   formaPagamento: string;
   trocoPara: number | null;
