@@ -6,8 +6,9 @@ import {
 import { config } from "./config";
 import type { Pedido } from "./api";
 
-// Impressora de 80mm imprime ~48 caracteres por linha na fonte padrão.
-const LARGURA = 48;
+// Largura do papel em caracteres, definida no .env (COLUNAS).
+// 58mm (POS58) = ~32; 80mm = ~48. Ver config.ts.
+const LARGURA = config.colunas;
 
 type Via = "CLIENTE" | "EMPRESA";
 
@@ -73,7 +74,18 @@ export function montarLinhasCupom(pedido: Pedido, via: Via): string[] {
   linhas.push(linha());
   for (const item of pedido.itens) {
     const subtotalItem = item.precoUnitario * item.quantidade;
-    linhas.push(esqDir(`${item.quantidade}x ${item.nome}`, real(subtotalItem)));
+    const etiqueta = `${item.quantidade}x ${item.nome}`;
+    const preco = real(subtotalItem);
+
+    // Cabe tudo numa linha só (com ao menos 1 espaço entre nome e preço)?
+    if (etiqueta.length + preco.length + 1 <= LARGURA) {
+      linhas.push(esqDir(etiqueta, preco));
+    } else {
+      // Papel estreito + nome longo: nome numa linha (cortado se precisar),
+      // e a quantidade x preço unitário com o subtotal na linha de baixo.
+      linhas.push(etiqueta.slice(0, LARGURA));
+      linhas.push(esqDir(`  ${item.quantidade}x ${real(item.precoUnitario)}`, preco));
+    }
   }
 
   linhas.push(linha());

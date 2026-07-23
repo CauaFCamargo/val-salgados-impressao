@@ -15,4 +15,7 @@ export const config = {
   // Qualquer coisa diferente de "false" mantém o modo seguro (não imprime).
   dryRun: (process.env.DRY_RUN ?? "true") !== "false",
   impressoraInterface: process.env.IMPRESSORA_INTERFACE ?? "",
+  // Largura do papel em caracteres. 58mm (ex.: POS58) = ~32 colunas;
+  // 80mm = ~48. Errar isso quebra o alinhamento do cupom.
+  colunas: Number(process.env.COLUNAS ?? "32"),
 };
