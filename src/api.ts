@@ -29,9 +29,14 @@ export interface Pedido {
   desconto: number;
   total: number;
   status: string;
-  impresso: boolean;
+  // Filas de impressão por via: true = a Val pediu essa via no painel.
+  filaCliente: boolean;
+  filaLoja: boolean;
   itens: ItemPedido[];
 }
+
+// As duas vias do cupom e o campo de fila correspondente na API.
+export type Via = "CLIENTE" | "EMPRESA";
 
 // Guardamos o token em memória e só logamos de novo quando ele vence.
 let token: string | null = null;
@@ -65,8 +70,8 @@ async function comToken(
   return resposta;
 }
 
-// Busca os pedidos que ainda não foram impressos.
-export async function buscarPedidosNaoImpressos(): Promise<Pedido[]> {
+// Busca os pedidos com ALGUMA via na fila (cliente e/ou loja).
+export async function buscarPedidosNaFila(): Promise<Pedido[]> {
   const resposta = await comToken((t) =>
     fetch(`${config.apiUrl}/pedidos`, {
       headers: { Authorization: `Bearer ${t}` },
@@ -76,18 +81,21 @@ export async function buscarPedidosNaoImpressos(): Promise<Pedido[]> {
     throw new Error(`Erro ao listar pedidos (${resposta.status})`);
   }
   const pedidos = (await resposta.json()) as Pedido[];
-  return pedidos.filter((pedido) => !pedido.impresso);
+  return pedidos.filter((p) => p.filaCliente || p.filaLoja);
 }
 
-// Marca o pedido como impresso (pra não imprimir de novo).
-export async function marcarImpresso(id: number): Promise<void> {
+// Dá baixa numa via depois de imprimir (tira ela da fila).
+export async function marcarViaImpressa(id: number, via: Via): Promise<void> {
+  // Só a via impressa vai no corpo; a outra fica como está.
+  const corpo = via === "CLIENTE" ? { cliente: false } : { loja: false };
   const resposta = await comToken((t) =>
-    fetch(`${config.apiUrl}/pedidos/${id}/impresso`, {
+    fetch(`${config.apiUrl}/pedidos/${id}/impressao`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${t}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+      body: JSON.stringify(corpo),
     })
   );
   if (!resposta.ok) {
-    throw new Error(`Erro ao marcar impresso (${resposta.status})`);
+    throw new Error(`Erro ao dar baixa na via (${resposta.status})`);
   }
 }

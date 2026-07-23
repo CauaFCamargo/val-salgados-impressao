@@ -4,13 +4,11 @@ import {
   CharacterSet,
 } from "node-thermal-printer";
 import { config } from "./config";
-import type { Pedido } from "./api";
+import type { Pedido, Via } from "./api";
 
 // Largura do papel em caracteres, definida no .env (COLUNAS).
 // 58mm (POS58) = ~32; 80mm = ~48. Ver config.ts.
 const LARGURA = config.colunas;
-
-type Via = "CLIENTE" | "EMPRESA";
 
 function real(valor: number): string {
   return `R$ ${valor.toFixed(2).replace(".", ",")}`;
@@ -110,16 +108,15 @@ export function montarLinhasCupom(pedido: Pedido, via: Via): string[] {
   return linhas;
 }
 
-// Imprime o pedido em DUAS vias (CLIENTE e EMPRESA), com corte entre elas.
-export async function imprimirPedido(pedido: Pedido): Promise<void> {
-  const vias: Via[] = ["CLIENTE", "EMPRESA"];
+// Imprime UMA via do pedido (a fila é por via, então o agente chama esta
+// função só pra via que a Val pediu). Cada chamada é um job próprio.
+export async function imprimirVia(pedido: Pedido, via: Via): Promise<void> {
+  const linhas = montarLinhasCupom(pedido, via);
 
   // Modo seguro: só mostra no terminal, não usa impressora nenhuma.
   if (config.dryRun) {
-    for (const via of vias) {
-      console.log("\n" + montarLinhasCupom(pedido, via).join("\n"));
-      console.log(">>>>>>> [ VIA SEPARADA — job próprio ] <<<<<<<");
-    }
+    console.log("\n" + linhas.join("\n"));
+    console.log(`>>>>>>> [ VIA ${via} ] <<<<<<<`);
     return;
   }
 
@@ -146,19 +143,15 @@ export async function imprimirPedido(pedido: Pedido): Promise<void> {
     }
   }
 
-  // Cada via é um JOB separado (um execute() por via), pra saírem "uma por
-  // vez" e não grudadas numa tira só. As linhas em branco + cut() no fim dão
-  // o respiro pra rasgar sem perder texto (e cortam, se houver guilhotina).
-  for (const via of vias) {
-    printer.clear();
-    for (const texto of montarLinhasCupom(pedido, via)) {
-      printer.println(texto);
-    }
-    printer.newLine();
-    printer.newLine();
-    printer.newLine();
-    printer.cut();
-    await printer.execute();
+  for (const texto of linhas) {
+    printer.println(texto);
   }
+  // Linhas em branco + cut() dão o respiro pra rasgar sem perder texto
+  // (e cortam, se houver guilhotina).
+  printer.newLine();
+  printer.newLine();
+  printer.newLine();
+  printer.cut();
+  await printer.execute();
   printer.clear();
 }
