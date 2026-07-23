@@ -118,7 +118,7 @@ export async function imprimirPedido(pedido: Pedido): Promise<void> {
   if (config.dryRun) {
     for (const via of vias) {
       console.log("\n" + montarLinhasCupom(pedido, via).join("\n"));
-      console.log(">>>>>>>>>>>>> [ CORTE DO PAPEL ] <<<<<<<<<<<<<");
+      console.log(">>>>>>> [ VIA SEPARADA — job próprio ] <<<<<<<");
     }
     return;
   }
@@ -146,13 +146,19 @@ export async function imprimirPedido(pedido: Pedido): Promise<void> {
     }
   }
 
+  // Cada via é um JOB separado (um execute() por via), pra saírem "uma por
+  // vez" e não grudadas numa tira só. As linhas em branco + cut() no fim dão
+  // o respiro pra rasgar sem perder texto (e cortam, se houver guilhotina).
   for (const via of vias) {
+    printer.clear();
     for (const texto of montarLinhasCupom(pedido, via)) {
       printer.println(texto);
     }
-    printer.cut(); // corta o papel ao fim de cada via
+    printer.newLine();
+    printer.newLine();
+    printer.newLine();
+    printer.cut();
+    await printer.execute();
   }
-
-  await printer.execute();
   printer.clear();
 }
