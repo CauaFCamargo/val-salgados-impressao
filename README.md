@@ -43,3 +43,20 @@ estiver instalada, ajuste `IMPRESSORA_INTERFACE`, ponha `DRY_RUN=false` e teste.
 
 > Acentos: está configurado pra português (`PC860_PORTUGUESE`). Se sua impressora
 > mostrar acentos errados, troque o `characterSet` em `src/cupom.ts`.
+
+## Rodar sozinho ao ligar o PC (loja)
+
+Pra loja não precisar abrir terminal:
+
+1. Dê um duplo-clique em **`instalar-no-boot.bat`** (uma vez só). Ele cria um
+   atalho na pasta de Inicialização do Windows.
+2. Pronto: toda vez que o computador ligar (e a Val logar no Windows), o
+   **`iniciar-agente.bat`** sobe minimizado e fica imprimindo o que for pedido
+   no painel. Se travar, ele se reinicia sozinho em 5s.
+
+Pra desligar o início automático, apague o atalho "Val Salgados Impressao" em
+`shell:startup` (Win+R → `shell:startup`).
+
+> Isso depende de o Windows fazer login automático (ou alguém logar). Se quiser
+> algo que rode sem login e 100% invisível, dá pra transformar em Serviço do
+> Windows com o NSSM — mais robusto, porém mais setup.
