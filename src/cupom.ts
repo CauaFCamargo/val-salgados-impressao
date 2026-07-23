@@ -131,11 +131,19 @@ export async function imprimirPedido(pedido: Pedido): Promise<void> {
     removeSpecialCharacters: false,
   });
 
-  const conectada = await printer.isPrinterConnected();
-  if (!conectada) {
-    throw new Error(
-      `Impressora não encontrada em "${config.impressoraInterface}"`
-    );
+  // isPrinterConnected() checa se o caminho EXISTE como arquivo (fs.existsSync).
+  // Isso vale pra impressora de rede (tcp://), mas um COMPARTILHAMENTO do
+  // Windows (\\host\nome) não é um arquivo — o existsSync diz "não existe"
+  // mesmo com tudo funcionando. Então só validamos a conexão no caso de rede;
+  // pro compartilhamento, vamos direto pro execute() (a escrita funciona).
+  const ehRede = config.impressoraInterface.startsWith("tcp://");
+  if (ehRede) {
+    const conectada = await printer.isPrinterConnected();
+    if (!conectada) {
+      throw new Error(
+        `Impressora não encontrada em "${config.impressoraInterface}"`
+      );
+    }
   }
 
   for (const via of vias) {
